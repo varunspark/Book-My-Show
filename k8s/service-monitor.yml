@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: bookmyshow-monitor
+  namespace: bookmyshow
+spec:
+  selector:
+    matchLabels:
+      app: bookmyshow
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
