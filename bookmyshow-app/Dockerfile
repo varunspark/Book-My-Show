@@ -1,59 +1,25 @@
-# Build stage
-FROM node:18-alpine AS builder
+# ---------- Stage 1: Build the React app ----------
+FROM node:18 AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+RUN npm install postcss@8.4.21 postcss-safe-parser@6.0.0 --legacy-peer-deps
+RUN npm install
+RUN npm install chokidar@3.5.3
 
-# Copy application source
 COPY . .
 
-# Build the application (for React)
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine
+# ---------- Stage 2: Serve with nginx ----------
+FROM nginx:alpine
 
-WORKDIR /app
+COPY --from=builder /app/build /usr/share/nginx/html
 
-# Install dumb-init to handle signals properly
-RUN apk add --no-cache dumb-init
+EXPOSE 80
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-adduser -S nodejs -u 1001
-
-# Copy package files
-COPY package*.json ./
-
-# Install only production dependencies
-RUN npm ci --only=production
-
-# Copy built application from builder stage
-COPY --from=builder /app/build ./build
-
-# Copy public assets if they exist
-COPY --chown=nodejs:nodejs public/ ./public/
-
-# Change ownership of app directory
-RUN chown -R nodejs:nodejs /app
-
-# Switch to non-root user
-USER nodejs
-
-# Expose port (matches ConfigMap PORT: 3000)
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => { if (r.statusCode !== 200) { throw new Error(r.statusCode); } })"
-
-# Use dumb-init to handle signals
-ENTRYPOINT ["dumb-init", "--"]
-
-# Start application
-CMD ["node", "server.js"]
+CMD ["nginx", "-g", "daemon off;"]
