@@ -1,0 +1,144 @@
+---
+# NetworkPolicy for Book-My-Show application
+# Implements least privilege network access control
+# Default deny ingress and egress, then allow specific traffic
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bookmyshow-deny-all
+  namespace: bookmyshow
+  labels:
+    app: bookmyshow
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# Allow ingress traffic to bookmyshow pods from LoadBalancer/Ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bookmyshow-allow-ingress
+  namespace: bookmyshow
+  labels:
+    app: bookmyshow
+spec:
+  podSelector:
+    matchLabels:
+      app: bookmyshow
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow traffic on port 3000 from anywhere (LoadBalancer will handle external filtering)
+  - from:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 3000
+
+---
+# Allow egress traffic from bookmyshow pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bookmyshow-allow-egress
+  namespace: bookmyshow
+  labels:
+    app: bookmyshow
+spec:
+  podSelector:
+    matchLabels:
+      app: bookmyshow
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS queries (port 53) to kube-dns in kube-system namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow HTTPS outbound (port 443) for external API calls, npm registry, etc.
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow HTTP outbound (port 80) if needed for non-HTTPS APIs
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 80
+  # Allow traffic to other pods in the same namespace (if needed for internal services)
+  - to:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 3000
+
+---
+# Allow ingress traffic to Service
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bookmyshow-allow-service-ingress
+  namespace: bookmyshow
+  labels:
+    app: bookmyshow
+spec:
+  podSelector:
+    matchLabels:
+      app: bookmyshow
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow from any pod with app=bookmyshow label
+  - from:
+    - podSelector:
+        matchLabels:
+          app: bookmyshow
+    ports:
+    - protocol: TCP
+      port: 3000
+  # Allow from kube-system for health checks and monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 3000
+
+---
+# NetworkPolicy for Prometheus ServiceMonitor scraping (if monitoring is enabled)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bookmyshow-allow-prometheus
+  namespace: bookmyshow
+  labels:
+    app: bookmyshow
+spec:
+  podSelector:
+    matchLabels:
+      app: bookmyshow
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow Prometheus scraping (typically on port 9090 or custom metrics port)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - namespaceSelector:
+        matchLabels:
+          name: prometheus
+    ports:
+    - protocol: TCP
+      port: 3000
