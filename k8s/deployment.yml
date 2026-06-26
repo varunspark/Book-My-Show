@@ -25,7 +25,7 @@ spec:
       containers:
       - name: bookmyshow
         image: 154810814607.dkr.ecr.ap-south-1.amazonaws.com/bookmyshow:v2
-         imagePullPolicy: Always
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
           name: http
@@ -50,7 +50,7 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-      readinessProbe:
+        readinessProbe:
           httpGet:
             path: /
             port: 80
@@ -135,4 +135,3 @@ spec:
   selector:
     matchLabels:
       app: bookmyshow
-      
