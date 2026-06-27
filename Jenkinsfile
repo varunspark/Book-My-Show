@@ -96,15 +96,11 @@ pipeline {
             }
         }
 
-        stage('Deploy to EKS') {
+        stage('Deploy to EKS via Ansible') {
             steps {
-                echo "Deploying to EKS cluster..."
+                echo "Deploying to EKS cluster using Ansible playbook..."
                 sh '''
-                    aws eks update-kubeconfig --name ${EKS_CLUSTER_NAME} --region ${AWS_REGION}
-
-                    kubectl set image deployment/bookmyshow bookmyshow=${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG} -n bookmyshow
-
-                    kubectl rollout status deployment/bookmyshow -n bookmyshow --timeout=180s
+                    ansible-playbook deploy.yml -e "image_tag=${IMAGE_TAG}"
                 '''
             }
         }
