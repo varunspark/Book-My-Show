@@ -78,7 +78,7 @@ The interesting part isn't the list of tools. It's that almost nothing worked on
 
 ## Problems I actually hit (and how I fixed them)
 
-A few of the more interesting ones — full root-cause writeups are in [`docs/PROJECT_DOCUMENTATION.md`](docs/PROJECT_DOCUMENTATION.md).
+A few of the more interesting ones — full root-cause writeups are in [`docs/BookMyShow_DevOps_Project_Documentation.docx`](docs/BookMyShow_DevOps_Project_Documentation.docx.md).
 
 - **Container crashed on startup with a missing `chokidar` module.** Turned out to be an optional npm dependency that gets silently skipped in some Linux container builds. Fixed by explicitly installing it in the Dockerfile.
 
@@ -113,7 +113,7 @@ Verified in practice — see the documentation for the full before/after `kubect
 
 ## Running it yourself
 
-The full rebuild guide — every command, in order, from a blank EC2 instance to a working pipeline — is in [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
+The full rebuild guide — every command, in order, from a blank EC2 instance to a working pipeline — is in [`BookMyShow_DevOps_Runbook.docx`](docs/BookMyShow_DevOps_Runbook.docx).
 
 ## What I'd do differently with more time
 
