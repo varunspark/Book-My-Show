@@ -1,0 +1,60 @@
+- name: Deploy BookMyShow to AWS EKS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    aws_region: "ap-south-1"
+    eks_cluster_name: "bookmyshow-cluster"
+    ecr_registry: "154810814607.dkr.ecr.ap-south-1.amazonaws.com"
+    ecr_repo: "bookmyshow"
+    namespace: "bookmyshow"
+    deployment_name: "bookmyshow"
+    container_name: "bookmyshow"
+    image_tag: "latest"
+
+  tasks:
+    - name: Update kubeconfig for EKS cluster
+      command: >
+        aws eks update-kubeconfig
+        --name {{ eks_cluster_name }}
+        --region {{ aws_region }}
+      register: kubeconfig_result
+      changed_when: "'Updated context' in kubeconfig_result.stdout or 'Added new context' in kubeconfig_result.stdout"
+
+    - name: Set new image on the deployment
+      command: >
+        kubectl set image deployment/{{ deployment_name }}
+        {{ container_name }}={{ ecr_registry }}/{{ ecr_repo }}:{{ image_tag }}
+        -n {{ namespace }}
+      register: set_image_result
+      changed_when: "'image updated' in set_image_result.stdout"
+
+    - name: Wait for rollout to complete
+      command: >
+        kubectl rollout status deployment/{{ deployment_name }}
+        -n {{ namespace }} --timeout=180s
+      register: rollout_result
+      changed_when: false
+
+    - name: Show rollout result
+      debug:
+        msg: "{{ rollout_result.stdout }}"
+
+    - name: Get current pods
+      command: kubectl get pods -n {{ namespace }}
+      register: pods_result
+      changed_when: false
+
+    - name: Show pods status
+      debug:
+        msg: "{{ pods_result.stdout_lines }}"
+
+    - name: Get service status
+      command: kubectl get svc -n {{ namespace }}
+      register: svc_result
+      changed_when: false
+
+    - name: Show service status
+      debug:
+        msg: "{{ svc_result.stdout_lines }}"
